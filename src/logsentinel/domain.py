@@ -104,7 +104,7 @@ class ScanResult:
     report_path: str | None = None
 
     @classmethod
-    def empty(cls, repository: str, rules: list[Rule]) -> "ScanResult":
+    def empty(cls, repository: str, rules: list[Rule]) -> ScanResult:
         return cls(
             repository=repository,
             generated_at=datetime.now(UTC),

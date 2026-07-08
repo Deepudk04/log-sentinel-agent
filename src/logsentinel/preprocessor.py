@@ -53,7 +53,11 @@ DEFAULT_IGNORE_PATTERNS = (
 
 
 class RepoPreprocessor:
-    def __init__(self, settings: Settings, language_detector: LanguageDetector | None = None) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        language_detector: LanguageDetector | None = None,
+    ) -> None:
         self.settings = settings
         self.language_detector = language_detector or LanguageDetector(
             include=settings.languages_include,
@@ -95,7 +99,9 @@ class RepoPreprocessor:
                 continue
 
             if len(files) >= limit:
-                skipped.append(f"File limit reached at {limit}; remaining supported files were skipped.")
+                skipped.append(
+                    f"File limit reached at {limit}; remaining supported files were skipped."
+                )
                 logger.warning("File limit reached at %s", limit)
                 break
 
@@ -156,7 +162,9 @@ class RepoPreprocessor:
             return None
 
         if len(content) > self.settings.max_file_bytes:
-            skipped.append(f"{path}: skipped because size exceeds {self.settings.max_file_bytes} bytes")
+            skipped.append(
+                f"{path}: skipped because size exceeds {self.settings.max_file_bytes} bytes"
+            )
             logger.warning("Skipping oversized file %s", path)
             return None
         if _is_binary(content):

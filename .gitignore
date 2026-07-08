@@ -1,4 +1,5 @@
 .venv/
+.python312/
 __pycache__/
 *.py[cod]
 *$py.class
@@ -18,3 +19,4 @@ pip-wheel-metadata/
 .logsentinel-*.log
 reports/
 Proposed.md
+.python312/

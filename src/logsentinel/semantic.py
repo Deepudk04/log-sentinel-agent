@@ -25,7 +25,10 @@ class GeminiSemanticAnalyzer:
     def analyze(self, snippets: list[Snippet]) -> SemanticResult:
         if not snippets:
             logger.info("Semantic analysis skipped: no snippets collected")
-            return SemanticResult(findings=[], notes=["Semantic analysis skipped: no snippets collected."])
+            return SemanticResult(
+                findings=[],
+                notes=["Semantic analysis skipped: no snippets collected."],
+            )
         if not self.settings.gemini_api_key:
             logger.warning("Semantic analysis skipped: Gemini API key is not set")
             return SemanticResult(
@@ -126,7 +129,9 @@ class GeminiSemanticAnalyzer:
             rule_id = str(raw.get("rule_id", "")).strip()
             if rule_id not in self.rules:
                 logger.warning("Skipping semantic finding with unknown rule_id: %s", rule_id)
-                notes.append(f"Semantic finding skipped because rule_id is not in catalog: {rule_id}")
+                notes.append(
+                    f"Semantic finding skipped because rule_id is not in catalog: {rule_id}"
+                )
                 continue
             path = str(raw.get("path", "")).strip()
             if path not in valid_paths:

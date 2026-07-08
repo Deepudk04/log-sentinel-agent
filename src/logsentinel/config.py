@@ -129,9 +129,15 @@ def load_settings() -> Settings:
         gemini_model=os.getenv("GEMINI_MODEL", "gemini-3.5-flash"),
         output_dir=Path(os.getenv("LOGSENTINEL_OUTPUT_DIR", "reports")),
         max_file_bytes=_int_from_env("LOGSENTINEL_MAX_FILE_BYTES", max_file_bytes),
-        max_files=_int_from_env("LOGSENTINEL_MAX_FILES", int(_nested(config, "limits", "max_files", 500))),
+        max_files=_int_from_env(
+            "LOGSENTINEL_MAX_FILES",
+            int(_nested(config, "limits", "max_files", 500)),
+        ),
         max_snippets=_int_from_env("LOGSENTINEL_MAX_SNIPPETS", 40),
-        languages_include=_str_tuple(_nested(config, "languages", "include", None), ("python", "java")),
+        languages_include=_str_tuple(
+            _nested(config, "languages", "include", None),
+            ("python", "java"),
+        ),
         languages_exclude=_str_tuple(_nested(config, "languages", "exclude", None), ()),
         ignore_patterns=_str_tuple(_nested(config, "paths", "ignore", None), ()),
         max_snippets_per_file=int(_nested(config, "limits", "max_snippets_per_file", 20)),
