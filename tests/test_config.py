@@ -46,6 +46,8 @@ def test_load_settings_reads_logsentinel_yml(monkeypatch, tmp_path):
                 "semantic:",
                 "  enabled: false",
                 "  min_confidence: 0.8",
+                "  timeout_seconds: 11",
+                "  cache_enabled: false",
                 "reporting:",
                 "  formats: ['markdown', 'json']",
                 "  fail_on_severity: 'medium'",
@@ -68,5 +70,7 @@ def test_load_settings_reads_logsentinel_yml(monkeypatch, tmp_path):
     assert settings.max_snippets_per_file == 3
     assert settings.semantic_enabled is False
     assert settings.semantic_min_confidence == 0.8
+    assert settings.semantic_timeout_seconds == 11
+    assert settings.semantic_cache_enabled is False
     assert settings.report_formats == ("markdown", "json")
     assert settings.fail_on_severity == "medium"

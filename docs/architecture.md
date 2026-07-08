@@ -18,4 +18,4 @@ flowchart TD
     L --> M[Exit Code / CI Gate]
 ```
 
-The core trust boundary is between Gemini output and accepted findings. Semantic output is treated as untrusted data until `SemanticFindingValidator` confirms rule IDs, paths, line ranges, evidence, confidence, and catalog alignment.
+The core trust boundary is between Gemini output and accepted findings. Semantic output is treated as untrusted data until `SemanticFindingValidator` confirms rule IDs, paths, line ranges, evidence, confidence, and catalog alignment. Semantic calls use strict JSON prompting, temperature `0`, timeout handling, and an optional in-process cache keyed by snippet payload, rule catalog version, and model name.

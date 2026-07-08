@@ -39,6 +39,7 @@ Exit codes:
 - `2`: scan, config, or runtime error
 
 Reports are written to `reports/` by default. Markdown, JSON, and SARIF 2.1.0 are supported.
+Static HTML can also be generated with `--format html`.
 
 ## Web UI
 
@@ -138,6 +139,31 @@ python evaluation/run_evaluation.py
 ```
 
 The evaluation harness scans labeled Python and Java fixtures without real Gemini calls and writes metrics to `evaluation/metrics.md`.
+
+## Sample Report
+
+```markdown
+# LogSentinel Report
+
+- Repository: `sample_repos`
+- Files scanned: `2`
+- LOC scanned: `58`
+- Findings: `14`
+- Semantic enabled: `False`
+
+## Findings
+
+### HIGH LOG-003: Sensitive data is excluded from logs
+- Location: `python_app/app.py:8`
+- Recommendation: Remove, mask, hash, tokenize, or encrypt sensitive values before logging.
+```
+
+## Roadmap
+
+- Expand evaluation corpus coverage across more logging frameworks.
+- Add persistent semantic cache storage for larger repositories.
+- Add optional static HTML styling for report publishing.
+- Add diff-only scanning for pull request workflows.
 
 ## Development
 

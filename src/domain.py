@@ -125,6 +125,10 @@ class ScanResult:
     markdown_report: str
     report_path: str | None = None
     report_paths: dict[str, str] = field(default_factory=dict)
+    metrics: dict[str, Any] = field(default_factory=dict)
+    config_summary: dict[str, Any] = field(default_factory=dict)
+    semantic_enabled: bool = False
+    total_loc: int = 0
 
     @classmethod
     def empty(cls, repository: str, rules: list[Rule]) -> ScanResult:

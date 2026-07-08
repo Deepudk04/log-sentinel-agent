@@ -23,6 +23,8 @@ def _settings() -> Settings:
         semantic_provider="gemini",
         semantic_min_confidence=0.7,
         redact_before_llm=True,
+        semantic_timeout_seconds=30,
+        semantic_cache_enabled=True,
         report_formats=("markdown",),
         fail_on_severity="high",
     )

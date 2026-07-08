@@ -204,18 +204,27 @@ def _report_node(state: ScanState) -> ScanState:
 
 
 def _state_to_result(state: ScanState) -> ScanResult:
+    files = state.get("files", [])
+    findings = state.get("findings", [])
+    settings = state["settings"]
+    request = state["request"]
+    metrics = PostProcessor.metrics(findings, files)
     return ScanResult(
-        repository=str(state["request"].repo_path.expanduser().resolve()),
+        repository=str(request.repo_path.expanduser().resolve()),
         generated_at=state.get("generated_at") or datetime.now(UTC),
-        scanned_files=len(state.get("files", [])),
+        scanned_files=len(files),
         skipped=state.get("skipped", []),
-        findings=state.get("findings", []),
+        findings=findings,
         snippets_sent=len(state.get("snippets", [])),
         rules=state.get("rules", []),
         notes=state.get("notes", []),
         markdown_report=state.get("markdown", ""),
         report_path=state.get("report_path"),
         report_paths=state.get("report_paths", {}),
+        metrics=metrics,
+        config_summary=_config_summary(settings),
+        semantic_enabled=bool(request.use_semantic and settings.semantic_enabled),
+        total_loc=int(metrics.get("total_loc", 0)),
     )
 
 
@@ -235,3 +244,21 @@ def _dedupe_findings(findings: list[Finding]) -> list[Finding]:
         seen.add(key)
         deduped.append(finding)
     return deduped
+
+
+def _config_summary(settings: Settings) -> dict[str, object]:
+    return {
+        "languages_include": settings.languages_include,
+        "languages_exclude": settings.languages_exclude,
+        "max_file_bytes": settings.max_file_bytes,
+        "max_files": settings.max_files,
+        "max_snippets": settings.max_snippets,
+        "max_snippets_per_file": settings.max_snippets_per_file,
+        "semantic_provider": settings.semantic_provider,
+        "semantic_min_confidence": settings.semantic_min_confidence,
+        "redact_before_llm": settings.redact_before_llm,
+        "semantic_timeout_seconds": settings.semantic_timeout_seconds,
+        "semantic_cache_enabled": settings.semantic_cache_enabled,
+        "report_formats": settings.report_formats,
+        "fail_on_severity": settings.fail_on_severity,
+    }

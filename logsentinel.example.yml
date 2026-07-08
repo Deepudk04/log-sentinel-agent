@@ -21,7 +21,9 @@ semantic:
   provider: "gemini"
   min_confidence: 0.70
   redact_before_llm: true
+  timeout_seconds: 30
+  cache_enabled: true
 
 reporting:
-  formats: ["markdown"]
+  formats: ["markdown", "json", "sarif"]
   fail_on_severity: "high"

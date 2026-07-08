@@ -43,12 +43,15 @@ class TreeSitterService:
                 error=self._import_error or f"No parser available for {code_file.language}",
             )
         try:
-            logger.debug("Parsing %s with Tree-sitter as text", code_file.relative_path)
-            tree = parser.parse(code_file.text)
+            logger.debug("Parsing %s with Tree-sitter as bytes", code_file.relative_path)
+            tree = parser.parse(source_bytes)
         except TypeError:
-            logger.debug("Text parse failed for %s; retrying as bytes", code_file.relative_path)
+            logger.debug(
+                "Bytes parse was not accepted for %s; retrying as text",
+                code_file.relative_path,
+            )
             try:
-                tree = parser.parse(source_bytes)
+                tree = parser.parse(code_file.text)
             except Exception as exc:  # pragma: no cover - depends on parser runtime
                 logger.warning("Tree-sitter parse failed for %s: %s", code_file.relative_path, exc)
                 return ParsedTree(
