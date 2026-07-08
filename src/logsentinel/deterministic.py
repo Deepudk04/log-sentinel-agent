@@ -99,7 +99,11 @@ class DeterministicAnalyzer:
             if not stripped or stripped.startswith(("#", "//", "*")):
                 continue
 
-            if LOG_CALL_RE.search(line) and SENSITIVE_RE.search(line) and not SAFE_TRANSFORM_RE.search(line):
+            if (
+                LOG_CALL_RE.search(line)
+                and SENSITIVE_RE.search(line)
+                and not SAFE_TRANSFORM_RE.search(line)
+            ):
                 findings.append(
                     self._finding(
                         "LOG-003",

@@ -15,7 +15,11 @@ def main(argv: list[str] | None = None) -> int:
     configure_logging()
     parser = argparse.ArgumentParser(description="Scan logging and exception handling issues.")
     parser.add_argument("repo_path", help="Repository or file path to scan.")
-    parser.add_argument("--no-semantic", action="store_true", help="Disable Gemini semantic analysis.")
+    parser.add_argument(
+        "--no-semantic",
+        action="store_true",
+        help="Disable Gemini semantic analysis.",
+    )
     parser.add_argument("--max-files", type=int, default=None)
     parser.add_argument("--max-snippets", type=int, default=None)
     parser.add_argument("--no-write-report", action="store_true")

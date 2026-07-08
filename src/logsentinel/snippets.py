@@ -83,7 +83,10 @@ class SnippetCollector:
                         ),
                     )
                     if len(snippets) >= max_snippets:
-                        logger.info("Snippet limit reached from Tree-sitter hotspots: %s", len(snippets))
+                        logger.info(
+                            "Snippet limit reached from Tree-sitter hotspots: %s",
+                            len(snippets),
+                        )
                         return snippets
             else:
                 logger.debug("Using regex hotspot fallback for %s", code_file.relative_path)

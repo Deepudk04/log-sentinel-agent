@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
-from logsentinel.domain import Finding, Rule, ScanResult, SourceRef
+from logsentinel.domain import Finding, ScanResult, SourceRef
 
 SEVERITY_ORDER = {
     "critical": 0,

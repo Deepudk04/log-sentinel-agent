@@ -48,6 +48,7 @@ class CodeFile:
     relative_path: str
     language: str
     text: str
+    file_hash: str = ""
 
     @property
     def lines(self) -> list[str]:
@@ -103,7 +104,7 @@ class ScanResult:
     report_path: str | None = None
 
     @classmethod
-    def empty(cls, repository: str, rules: list[Rule]) -> "ScanResult":
+    def empty(cls, repository: str, rules: list[Rule]) -> ScanResult:
         return cls(
             repository=repository,
             generated_at=datetime.now(UTC),
