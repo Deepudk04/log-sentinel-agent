@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LogSentinel</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>LogSentinel</h1>
+        <p>Logging and exception handling review</p>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="scan-panel">
+        <form method="post" action="/scan">
+          <label for="repo_path">Repository path</label>
+          <input
+            id="repo_path"
+            name="repo_path"
+            type="text"
+            value="{{ repo_path }}"
+            placeholder="C:\path\to\repo"
+            required
+          />
+
+          <div class="control-grid">
+            <label class="checkbox-row">
+              <input
+                type="checkbox"
+                name="use_semantic"
+                value="true"
+                {% if use_semantic %}checked{% endif %}
+              />
+              <span>Gemini semantic pass</span>
+            </label>
+
+            <label for="max_files">Files</label>
+            <input id="max_files" name="max_files" type="number" min="1" value="{{ max_files }}" />
+
+            <label for="max_snippets">Snippets</label>
+            <input
+              id="max_snippets"
+              name="max_snippets"
+              type="number"
+              min="1"
+              value="{{ max_snippets }}"
+            />
+          </div>
+
+          <button type="submit">Run scan</button>
+        </form>
+      </section>
+
+      {% if error %}
+      <section class="status error">
+        <strong>Scan failed</strong>
+        <span>{{ error }}</span>
+      </section>
+      {% endif %}
+
+      {% if markdown_report %}
+      <section class="result-bar">
+        <div>
+          <strong>{{ findings_count }}</strong>
+          <span>findings</span>
+        </div>
+        {% if report_filename %}
+        <a href="/reports/{{ report_filename }}">Download Markdown</a>
+        {% endif %}
+      </section>
+
+      {% if notes %}
+      <section class="status">
+        {% for note in notes %}
+        <div>{{ note }}</div>
+        {% endfor %}
+      </section>
+      {% endif %}
+
+      <section class="report">
+        <pre>{{ markdown_report }}</pre>
+      </section>
+      {% endif %}
+    </main>
+  </body>
+</html>

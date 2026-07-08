@@ -1,0 +1,277 @@
+{
+  "version": "2026-07-07",
+  "sources": [
+    {
+      "title": "OWASP Logging Cheat Sheet",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
+    },
+    {
+      "title": "OWASP Error Handling Cheat Sheet",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html"
+    }
+  ],
+  "rules": [
+    {
+      "id": "LOG-001",
+      "title": "Security-relevant events are logged",
+      "category": "logging",
+      "severity": "medium",
+      "analysis_mode": "semantic",
+      "languages": ["python", "java"],
+      "description": "Security-sensitive flows should log meaningful events such as validation failures, authentication outcomes, authorization failures, session failures, application errors, and high-risk actions.",
+      "recommendation": "Add security event logging at the decision point, with a stable event name and enough context for investigation.",
+      "standards": ["OWASP Logging Cheat Sheet"],
+      "source_refs": [
+        {
+          "title": "OWASP Logging Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html#which-events-to-log",
+          "line_start": 270,
+          "line_end": 296,
+          "note": "Lists events that should be logged where possible."
+        }
+      ],
+      "semantic_prompt": "Look for security-sensitive flows such as authentication, authorization, validation, session handling, application errors, administrative actions, data exports, file uploads, deserialization, or backend connection failures. Flag only if the snippet shows the security decision or failure path and no meaningful logging near that decision.",
+      "deterministic_signals": []
+    },
+    {
+      "id": "LOG-002",
+      "title": "Log entries include investigation context",
+      "category": "logging",
+      "severity": "medium",
+      "analysis_mode": "semantic",
+      "languages": ["python", "java"],
+      "description": "Security log entries need enough context to support monitoring and investigation, including when, where, who, and what details when available.",
+      "recommendation": "Include stable event names, actor or subject identifiers, action, target object, outcome, severity, reason, and request or correlation identifiers where applicable.",
+      "standards": ["OWASP Logging Cheat Sheet"],
+      "source_refs": [
+        {
+          "title": "OWASP Logging Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html#event-attributes",
+          "line_start": 305,
+          "line_end": 346,
+          "note": "Describes contextual event attributes for log entries."
+        }
+      ],
+      "semantic_prompt": "Review logging statements for security-relevant events. Flag logs that are too vague to investigate because they omit available actor, action, target, outcome, reason, severity, request id, or code location context.",
+      "deterministic_signals": []
+    },
+    {
+      "id": "LOG-003",
+      "title": "Sensitive data is excluded from logs",
+      "category": "logging",
+      "severity": "high",
+      "analysis_mode": "hybrid",
+      "languages": ["python", "java"],
+      "description": "Logs should not directly record secrets, credentials, tokens, session identifiers, sensitive personal data, payment data, source code, or database connection strings.",
+      "recommendation": "Remove, mask, hash, tokenize, or encrypt sensitive values before logging. Prefer stable non-sensitive identifiers for correlation.",
+      "standards": ["OWASP Logging Cheat Sheet"],
+      "source_refs": [
+        {
+          "title": "OWASP Logging Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html#data-to-exclude",
+          "line_start": 349,
+          "line_end": 366,
+          "note": "Identifies data that should usually not be recorded directly."
+        },
+        {
+          "title": "OWASP Logging Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html#data-to-exclude",
+          "line_start": 367,
+          "line_end": 375,
+          "note": "Calls out data that may require special treatment before logging."
+        }
+      ],
+      "semantic_prompt": "Find logging of secrets, credentials, tokens, session ids, cookies, authorization headers, payment data, PII, source code, connection strings, private keys, internal paths, or internal network identifiers. Flag only when the sensitive value appears to be logged directly without masking or redaction.",
+      "deterministic_signals": ["logging call contains identifier names such as password, token, secret, api_key, authorization, cookie, session_id, ssn, credit_card, connection_string"]
+    },
+    {
+      "id": "LOG-004",
+      "title": "Untrusted event data is sanitized before logging",
+      "category": "logging",
+      "severity": "high",
+      "analysis_mode": "hybrid",
+      "languages": ["python", "java"],
+      "description": "Event data from less trusted zones should be validated, sanitized, and encoded so log entries are not vulnerable to log injection or broken log formatting.",
+      "recommendation": "Normalize or reject control characters, carriage returns, line feeds, and delimiters before logging untrusted input. Use structured logging fields where possible.",
+      "standards": ["OWASP Logging Cheat Sheet"],
+      "source_refs": [
+        {
+          "title": "OWASP Logging Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html#event-collection",
+          "line_start": 383,
+          "line_end": 392,
+          "note": "Recommends validation, sanitization, and correct encoding for event data."
+        },
+        {
+          "title": "OWASP Logging Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html#verification",
+          "line_start": 399,
+          "line_end": 406,
+          "note": "Includes testing logs for injection susceptibility."
+        }
+      ],
+      "semantic_prompt": "Find logs that include request parameters, headers, payloads, user input, filenames, paths, or external service data. Flag when the data flows into logs without visible validation, sanitization, encoding, structured logging, or safe normalization.",
+      "deterministic_signals": ["logging call contains request, header, param, payload, input, user_agent, or body without nearby sanitize/escape/normalize/replace"]
+    },
+    {
+      "id": "LOG-005",
+      "title": "Application-wide logging mechanism is used",
+      "category": "logging",
+      "severity": "medium",
+      "analysis_mode": "semantic",
+      "languages": ["python", "java"],
+      "description": "Applications should use framework logging or an application-wide logging handler rather than ad hoc console output or scattered custom mechanisms.",
+      "recommendation": "Route security and exception logging through a standard logger or approved logging module with consistent formatting and field handling.",
+      "standards": ["OWASP Logging Cheat Sheet"],
+      "source_refs": [
+        {
+          "title": "OWASP Logging Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html#event-collection",
+          "line_start": 383,
+          "line_end": 388,
+          "note": "Recommends suitable framework logging or an application-wide log handler."
+        }
+      ],
+      "semantic_prompt": "Flag security or exception logging that relies on print, System.out/System.err, printStackTrace, ad hoc file writes, or custom one-off mechanisms instead of the application's standard logger.",
+      "deterministic_signals": ["System.out.println in catch blocks", "printStackTrace", "traceback.print_exc", "print in Python exception handlers"]
+    },
+    {
+      "id": "LOG-006",
+      "title": "Logging failures do not break application flow or leak information",
+      "category": "logging",
+      "severity": "medium",
+      "analysis_mode": "semantic",
+      "languages": ["python", "java"],
+      "description": "Failures in logging processes should not stop the application from otherwise running and should not leak information.",
+      "recommendation": "Guard custom logging sinks and remote log writers with bounded failure handling, timeouts, and non-sensitive fallback behavior.",
+      "standards": ["OWASP Logging Cheat Sheet"],
+      "source_refs": [
+        {
+          "title": "OWASP Logging Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html#event-collection",
+          "line_start": 389,
+          "line_end": 394,
+          "note": "Warns that logging failures must not prevent normal application execution or leak information."
+        },
+        {
+          "title": "OWASP Logging Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html#verification",
+          "line_start": 407,
+          "line_end": 409,
+          "note": "Recommends testing behavior when logging infrastructure fails."
+        }
+      ],
+      "semantic_prompt": "Look for custom logging code, audit sinks, database log writers, or remote logging calls. Flag when a logging failure can interrupt business logic, expose logging internals, or recurse into more failing logging without a safe fallback.",
+      "deterministic_signals": []
+    },
+    {
+      "id": "LOG-007",
+      "title": "Required logging cannot be completely disabled",
+      "category": "logging",
+      "severity": "medium",
+      "analysis_mode": "hybrid",
+      "languages": ["python", "java"],
+      "description": "Logging configuration should keep required application and compliance events available; logging should not be completely disabled by normal configuration.",
+      "recommendation": "Prevent disabling required security and compliance logs. Treat logging level changes as controlled configuration and verify defaults periodically.",
+      "standards": ["OWASP Logging Cheat Sheet"],
+      "source_refs": [
+        {
+          "title": "OWASP Logging Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html#customizable-logging",
+          "line_start": 376,
+          "line_end": 382,
+          "note": "Describes requirements for customizable logging levels."
+        }
+      ],
+      "semantic_prompt": "Find configuration or code that can disable application logging, security logging, audit logging, or compliance-required events completely. Flag only when the disabling behavior is evident.",
+      "deterministic_signals": ["logging.disable", "logger.disabled = True", "level OFF", "Level.OFF"]
+    },
+    {
+      "id": "ERR-001",
+      "title": "Unexpected errors return generic responses and are logged server-side",
+      "category": "exception-handling",
+      "severity": "high",
+      "analysis_mode": "hybrid",
+      "languages": ["python", "java"],
+      "description": "Unexpected errors should produce generic client responses while detailed exception information is logged server-side for investigation.",
+      "recommendation": "Centralize exception handling. Return a generic response to callers and log exception details through the standard logger on the server side.",
+      "standards": ["OWASP Error Handling Cheat Sheet", "OWASP Logging Cheat Sheet"],
+      "source_refs": [
+        {
+          "title": "OWASP Error Handling Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html#objective",
+          "line_start": 207,
+          "line_end": 216,
+          "note": "Describes generic responses with server-side error logging."
+        },
+        {
+          "title": "OWASP Logging Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html#which-events-to-log",
+          "line_start": 278,
+          "line_end": 279,
+          "note": "Includes application errors and system events among events to log."
+        }
+      ],
+      "semantic_prompt": "Look for exception handlers that return client responses. Flag when unexpected errors are returned without generic messaging, or when details are returned but not logged server-side.",
+      "deterministic_signals": ["except/catch block returns exception message without logger call", "HTTPException detail=str(e)", "ResponseEntity body(e.getMessage())"]
+    },
+    {
+      "id": "ERR-002",
+      "title": "Technical error details are not exposed to callers",
+      "category": "exception-handling",
+      "severity": "high",
+      "analysis_mode": "hybrid",
+      "languages": ["python", "java"],
+      "description": "Error responses should not reveal stack traces, SQL errors, installation paths, framework internals, or raw exception messages to callers.",
+      "recommendation": "Return a generic error payload and correlation id. Keep raw exception messages, stack traces, SQL details, and paths in protected server-side logs only.",
+      "standards": ["OWASP Error Handling Cheat Sheet"],
+      "source_refs": [
+        {
+          "title": "OWASP Error Handling Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html",
+          "line_start": 185,
+          "line_end": 206,
+          "note": "Shows examples of stack trace and SQL/path disclosure."
+        },
+        {
+          "title": "OWASP Error Handling Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html#objective",
+          "line_start": 207,
+          "line_end": 216,
+          "note": "Recommends generic responses that do not reveal implementation details."
+        }
+      ],
+      "semantic_prompt": "Flag raw exception messages, stack traces, SQL errors, filesystem paths, framework class names, or implementation details being returned to callers, rendered in responses, or included in API error bodies.",
+      "deterministic_signals": ["return str(e)", "detail=str(e)", "getMessage() in response body", "traceback.format_exc in response", "stackTrace in response"]
+    },
+    {
+      "id": "ERR-003",
+      "title": "Caught exceptions are logged or propagated",
+      "category": "exception-handling",
+      "severity": "medium",
+      "analysis_mode": "hybrid",
+      "languages": ["python", "java"],
+      "description": "Caught application errors should not be silently swallowed; they should either be handled with meaningful server-side logging or propagated to centralized error handling.",
+      "recommendation": "Log the exception with stack context or rethrow it to a global handler. Avoid empty catch/except blocks and broad handlers that hide failures.",
+      "standards": ["OWASP Error Handling Cheat Sheet", "OWASP Logging Cheat Sheet"],
+      "source_refs": [
+        {
+          "title": "OWASP Error Handling Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html#objective",
+          "line_start": 207,
+          "line_end": 216,
+          "note": "Detailed exception information should be logged server-side."
+        },
+        {
+          "title": "OWASP Logging Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html#which-events-to-log",
+          "line_start": 278,
+          "line_end": 279,
+          "note": "Application errors and system events should be logged."
+        }
+      ],
+      "semantic_prompt": "Flag catch/except blocks that ignore exceptions, only pass, only return a default value, or only comment TODO without logging or propagation. Do not flag handlers that deliberately recover and log the reason.",
+      "deterministic_signals": ["empty except/catch", "pass in except", "catch block without log or throw", "except block without log or raise"]
+    }
+  ]
+}
