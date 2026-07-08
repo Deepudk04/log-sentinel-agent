@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from logsentinel.config import Settings
 from logsentinel.domain import Finding, Rule, Snippet
 from logsentinel.observability import get_logger
+from logsentinel.semantic.snippet_builder import SnippetBuilder
 
 logger = get_logger("semantic")
 
@@ -36,11 +37,15 @@ class GeminiSemanticAnalyzer:
                 notes=["Semantic analysis skipped: GEMINI_API_KEY or GOOGLE_API_KEY is not set."],
             )
 
-        prompt = self._build_prompt(snippets)
+        safe_snippets = SnippetBuilder(
+            redact_before_llm=self.settings.redact_before_llm,
+            max_snippets_per_file=self.settings.max_snippets_per_file,
+        ).redact_existing(snippets)
+        prompt = self._build_prompt(safe_snippets)
         logger.info(
             "Calling Gemini semantic analyzer: model=%s snippets=%s prompt_chars=%s",
             self.settings.gemini_model,
-            len(snippets),
+            len(safe_snippets),
             len(prompt),
         )
         try:
@@ -70,7 +75,7 @@ class GeminiSemanticAnalyzer:
                 close()
                 logger.debug("Gemini client closed")
 
-        return self._parse_response(text, snippets)
+        return self._parse_response(text, safe_snippets)
 
     def _build_prompt(self, snippets: list[Snippet]) -> str:
         semantic_rules = [
@@ -88,10 +93,14 @@ class GeminiSemanticAnalyzer:
         ]
         snippet_payload = [
             {
+                "snippet_id": snippet.snippet_id,
                 "path": snippet.path,
                 "language": snippet.language,
                 "start_line": snippet.start_line,
                 "end_line": snippet.end_line,
+                "symbol": snippet.symbol,
+                "candidate_rule_ids": snippet.candidate_rule_ids,
+                "deterministic_signals": snippet.deterministic_signals,
                 "reason": snippet.reason,
                 "text": snippet.text,
             }
@@ -141,7 +150,7 @@ class GeminiSemanticAnalyzer:
             rule = self.rules[rule_id]
             line = _safe_int(raw.get("line")) or snippet_by_path[path].start_line
             confidence = min(max(float(raw.get("confidence", 0.55)), 0.0), 1.0)
-            if confidence < 0.55:
+            if confidence < self.settings.semantic_min_confidence:
                 logger.debug(
                     "Skipping low-confidence semantic finding: rule=%s path=%s confidence=%s",
                     rule_id,
