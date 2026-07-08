@@ -62,6 +62,8 @@ class Settings:
     semantic_provider: str
     semantic_min_confidence: float
     redact_before_llm: bool
+    semantic_timeout_seconds: int
+    semantic_cache_enabled: bool
     report_formats: tuple[str, ...]
     fail_on_severity: str | None
 
@@ -155,6 +157,14 @@ def load_settings(config_path: Path | None = None) -> Settings:
         redact_before_llm=_bool_from_env(
             "LOGSENTINEL_REDACT_BEFORE_LLM",
             bool(_nested(config, "semantic", "redact_before_llm", True)),
+        ),
+        semantic_timeout_seconds=_int_from_env(
+            "LOGSENTINEL_SEMANTIC_TIMEOUT_SECONDS",
+            int(_nested(config, "semantic", "timeout_seconds", 30)),
+        ),
+        semantic_cache_enabled=_bool_from_env(
+            "LOGSENTINEL_SEMANTIC_CACHE_ENABLED",
+            bool(_nested(config, "semantic", "cache_enabled", True)),
         ),
         report_formats=_str_tuple(os.getenv("LOGSENTINEL_REPORT_FORMATS"), configured_formats),
         fail_on_severity=os.getenv(

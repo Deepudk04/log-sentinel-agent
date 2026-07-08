@@ -28,7 +28,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--format",
         default=None,
-        help="Comma-separated output formats: markdown,json,sarif.",
+        help="Comma-separated output formats: markdown,json,sarif,html.",
     )
     parser.add_argument("--fail-on", default=None, help="Fail on severity at or above this level.")
     parser.add_argument("--config", default=None, help="Path to logsentinel.yml.")

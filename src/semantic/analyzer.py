@@ -1,16 +1,18 @@
 from __future__ import annotations
 
-import json
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from dataclasses import dataclass
 
 from config import Settings
 from domain import CodeFile, Finding, Rule, Snippet
 from observability import get_logger
+from semantic.prompt_builder import SemanticPromptBuilder
 from semantic.response_parser import SemanticResponseParser
 from semantic.snippet_builder import SnippetBuilder
 from semantic.validator import SemanticFindingValidator
 
 logger = get_logger("semantic")
+_SEMANTIC_CACHE: dict[str, str] = {}
 
 
 @dataclass(frozen=True)
@@ -47,12 +49,15 @@ class GeminiSemanticAnalyzer:
             redact_before_llm=self.settings.redact_before_llm,
             max_snippets_per_file=self.settings.max_snippets_per_file,
         ).redact_existing(snippets)
-        prompt = self._build_prompt(safe_snippets)
+        prompt_builder = SemanticPromptBuilder(list(self.rules.values()))
+        prompt = prompt_builder.build(safe_snippets)
+        cache_key = prompt_builder.cache_key(safe_snippets, self.settings.gemini_model)
         logger.info(
-            "Calling Gemini semantic analyzer: model=%s snippets=%s prompt_chars=%s",
+            "Calling Gemini semantic analyzer: model=%s snippets=%s prompt_chars=%s cache=%s",
             self.settings.gemini_model,
             len(safe_snippets),
             len(prompt),
+            "enabled" if self.settings.semantic_cache_enabled else "disabled",
         )
         try:
             from google import genai
@@ -63,33 +68,53 @@ class GeminiSemanticAnalyzer:
                 notes=[f"Semantic analysis skipped: google-genai unavailable ({exc})."],
             )
 
-        client = genai.Client(api_key=self.settings.gemini_api_key)
         parser = SemanticResponseParser()
         parsed = None
         notes: list[str] = []
-        try:
-            for attempt in range(2):
-                response = client.models.generate_content(
-                    model=self.settings.gemini_model,
-                    contents=prompt,
-                    config={"temperature": 0, "response_mime_type": "application/json"},
+        if self.settings.semantic_cache_enabled and cache_key in _SEMANTIC_CACHE:
+            logger.info("Semantic cache hit: key=%s", cache_key[:12])
+            parsed = parser.parse(_SEMANTIC_CACHE[cache_key])
+            notes.extend(parsed.notes)
+        else:
+            client = genai.Client(api_key=self.settings.gemini_api_key)
+            try:
+                for attempt in range(2):
+                    text = _call_gemini_with_timeout(
+                        client,
+                        model=self.settings.gemini_model,
+                        prompt=prompt,
+                        timeout_seconds=self.settings.semantic_timeout_seconds,
+                    )
+                    logger.info("Gemini response received: response_chars=%s", len(text))
+                    parsed = parser.parse(text)
+                    notes.extend(parsed.notes)
+                    if parsed.valid_json:
+                        if self.settings.semantic_cache_enabled:
+                            _SEMANTIC_CACHE[cache_key] = text
+                            logger.debug("Semantic cache stored: key=%s", cache_key[:12])
+                        break
+                    if attempt == 0:
+                        logger.warning("Retrying semantic analysis once after invalid JSON")
+            except TimeoutError:
+                logger.error(
+                    "Semantic analysis timed out after %s seconds",
+                    self.settings.semantic_timeout_seconds,
                 )
-                text = getattr(response, "text", "") or ""
-                logger.info("Gemini response received: response_chars=%s", len(text))
-                parsed = parser.parse(text)
-                notes.extend(parsed.notes)
-                if parsed.valid_json:
-                    break
-                if attempt == 0:
-                    logger.warning("Retrying semantic analysis once after invalid JSON")
-        except Exception as exc:  # pragma: no cover - network/API dependent
-            logger.error("Semantic analysis failed: %s", exc)
-            return SemanticResult(findings=[], notes=[f"Semantic analysis failed: {exc}"])
-        finally:
-            close = getattr(client, "close", None)
-            if callable(close):
-                close()
-                logger.debug("Gemini client closed")
+                return SemanticResult(
+                    findings=[],
+                    notes=[
+                        "Semantic analysis failed: timed out after "
+                        f"{self.settings.semantic_timeout_seconds} seconds."
+                    ],
+                )
+            except Exception as exc:  # pragma: no cover - network/API dependent
+                logger.error("Semantic analysis failed: %s", exc)
+                return SemanticResult(findings=[], notes=[f"Semantic analysis failed: {exc}"])
+            finally:
+                close = getattr(client, "close", None)
+                if callable(close):
+                    close()
+                    logger.debug("Gemini client closed")
 
         if parsed is None or not parsed.valid_json:
             return SemanticResult(findings=[], notes=notes)
@@ -104,44 +129,23 @@ class GeminiSemanticAnalyzer:
         notes.extend(validation_notes)
         return SemanticResult(findings=findings, notes=notes)
 
-    def _build_prompt(self, snippets: list[Snippet]) -> str:
-        semantic_rules = [
-            {
-                "id": rule.id,
-                "title": rule.title,
-                "severity": rule.severity,
-                "description": rule.description,
-                "semantic_check": rule.semantic_prompt,
-                "recommendation": rule.recommendation,
-                "standards": rule.standards,
-            }
-            for rule in self.rules.values()
-            if rule.analysis_mode in {"semantic", "hybrid"}
-        ]
-        snippet_payload = [
-            {
-                "snippet_id": snippet.snippet_id,
-                "path": snippet.path,
-                "language": snippet.language,
-                "start_line": snippet.start_line,
-                "end_line": snippet.end_line,
-                "symbol": snippet.symbol,
-                "candidate_rule_ids": snippet.candidate_rule_ids,
-                "deterministic_signals": snippet.deterministic_signals,
-                "reason": snippet.reason,
-                "text": snippet.text,
-            }
-            for snippet in snippets
-        ]
-        return (
-            "You are LogSentinel, a code security reviewer focused only on logging and "
-            "exception handling. Use only the provided OWASP-derived rule IDs. Do not invent "
-            "rules, paths, or facts. Analyze only the snippets. If evidence is insufficient, "
-            "return no finding for that case.\n\n"
-            "Return strict JSON with this shape:\n"
-            "{\"findings\":[{\"rule_id\":\"LOG-001\",\"path\":\"file.py\",\"line\":12,"
-            "\"message\":\"short problem\",\"evidence\":\"short evidence from snippet\","
-            "\"recommendation\":\"specific fix\",\"confidence\":0.0}]}\n\n"
-            f"Rules:\n{json.dumps(semantic_rules, indent=2)}\n\n"
-            f"Snippets:\n{json.dumps(snippet_payload, indent=2)}"
+
+def _call_gemini_with_timeout(
+    client,
+    *,
+    model: str,
+    prompt: str,
+    timeout_seconds: int,
+) -> str:
+    executor = ThreadPoolExecutor(max_workers=1)
+    try:
+        future = executor.submit(
+            client.models.generate_content,
+            model=model,
+            contents=prompt,
+            config={"temperature": 0, "response_mime_type": "application/json"},
         )
+        response = future.result(timeout=timeout_seconds)
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
+    return getattr(response, "text", "") or ""

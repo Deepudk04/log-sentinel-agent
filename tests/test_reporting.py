@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 from domain import Finding, ScanResult
-from reporting import render_json_report, render_markdown, render_sarif
+from reporting import render_html_report, render_json_report, render_markdown, render_sarif
 from rule_catalog import load_rules
 
 
@@ -16,6 +16,10 @@ def test_report_includes_rule_catalog_and_sources():
         rules=list(load_rules()),
         notes=[],
         markdown_report="",
+        metrics={"total_loc": 4},
+        config_summary={"report_formats": ("markdown", "json")},
+        semantic_enabled=False,
+        total_loc=4,
     )
 
     markdown = render_markdown(result)
@@ -53,12 +57,23 @@ def test_json_and_sarif_reports_include_findings():
         rules=[rule],
         notes=[],
         markdown_report="",
+        metrics={"total_loc": 4},
+        config_summary={"report_formats": ("markdown", "json")},
+        semantic_enabled=False,
+        total_loc=4,
     )
 
     json_report = render_json_report(result)
     sarif_report = render_sarif(result)
+    html_report = render_html_report(result)
 
     assert '"rule_id": "LOG-003"' in json_report
+    assert '"total_loc_scanned": 4' in json_report
+    assert '"semantic_enabled": false' in json_report
+    assert '"config_summary"' in json_report
+    assert '"metrics"' in json_report
     assert "secret-value" not in json_report
     assert '"version": "2.1.0"' in sarif_report
     assert '"ruleId": "LOG-003"' in sarif_report
+    assert "<h1>LogSentinel Report</h1>" in html_report
+    assert "secret-value" not in html_report
