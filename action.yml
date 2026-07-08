@@ -48,13 +48,18 @@ runs:
       shell: bash
       env:
         GEMINI_API_KEY: ${{ inputs.gemini_api_key }}
+        LOGSENTINEL_INPUT_PATH: ${{ inputs.path }}
+        LOGSENTINEL_INPUT_CONFIG: ${{ inputs.config }}
+        LOGSENTINEL_INPUT_SEMANTIC_ENABLED: ${{ inputs.semantic_enabled }}
+        LOGSENTINEL_INPUT_FAIL_ON: ${{ inputs.fail_on }}
+        LOGSENTINEL_INPUT_OUTPUT_FORMAT: ${{ inputs.output_format }}
       run: |
-        args=("${{ inputs.path }}" "--format" "${{ inputs.output_format }}" "--fail-on" "${{ inputs.fail_on }}")
-        if [ "${{ inputs.semantic_enabled }}" != "true" ]; then
+        args=("$LOGSENTINEL_INPUT_PATH" "--format" "$LOGSENTINEL_INPUT_OUTPUT_FORMAT" "--fail-on" "$LOGSENTINEL_INPUT_FAIL_ON")
+        if [ "$LOGSENTINEL_INPUT_SEMANTIC_ENABLED" != "true" ]; then
           args+=("--no-semantic")
         fi
-        if [ -n "${{ inputs.config }}" ]; then
-          args+=("--config" "${{ inputs.config }}")
+        if [ -n "$LOGSENTINEL_INPUT_CONFIG" ]; then
+          args+=("--config" "$LOGSENTINEL_INPUT_CONFIG")
         fi
         logsentinel-scan "${args[@]}"
 
