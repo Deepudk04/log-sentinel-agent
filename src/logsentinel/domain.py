@@ -48,6 +48,7 @@ class CodeFile:
     relative_path: str
     language: str
     text: str
+    file_hash: str = ""
 
     @property
     def lines(self) -> list[str]:

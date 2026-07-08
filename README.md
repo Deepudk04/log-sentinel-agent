@@ -86,6 +86,21 @@ logsentinel-scan C:\path\to\repo
 
 Reports are written to `reports/` by default.
 
+## Configuration
+
+LogSentinel loads `logsentinel.yml` from the current working directory when present. Start from:
+
+```powershell
+Copy-Item logsentinel.example.yml logsentinel.yml
+```
+
+Supported settings include language include/exclude lists, ignore patterns, file limits,
+semantic settings, and reporting defaults.
+
+Repository-specific ignores can also be added to `.logsentinelignore` using gitignore-style
+glob patterns. LogSentinel also applies common build, vendor, cache, and generated-directory
+skips by default.
+
 ## Rule Catalog
 
 The catalog lives at:

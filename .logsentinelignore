@@ -1,0 +1,8 @@
+# Add repository-specific paths that LogSentinel should skip.
+# Patterns use gitignore-style globs.
+**/.venv/**
+**/node_modules/**
+**/target/**
+**/build/**
+**/dist/**
+**/generated/**

@@ -1,0 +1,27 @@
+languages:
+  include: ["python", "java"]
+  exclude: []
+
+paths:
+  ignore:
+    - "**/.venv/**"
+    - "**/node_modules/**"
+    - "**/target/**"
+    - "**/build/**"
+    - "**/dist/**"
+    - "**/generated/**"
+
+limits:
+  max_file_size_kb: 500
+  max_files: 5000
+  max_snippets_per_file: 20
+
+semantic:
+  enabled: true
+  provider: "gemini"
+  min_confidence: 0.70
+  redact_before_llm: true
+
+reporting:
+  formats: ["markdown"]
+  fail_on_severity: "high"

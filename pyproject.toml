@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "logsentinel"
 version = "0.1.0"
-description = "OWASP-backed logging and exception handling scanner using Tree-sitter, LangGraph, and Gemini."
+description = "Agentic logging and exception-handling analyzer for Python and Java repositories."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
@@ -15,6 +15,7 @@ dependencies = [
   "uvicorn[standard]>=0.35.0",
   "jinja2>=3.1.4",
   "python-multipart>=0.0.9",
+  "PyYAML>=6.0.0",
   "langgraph>=1.2.0",
   "google-genai>=2.10.0",
   "tree-sitter-language-pack>=1.12.2",
@@ -23,6 +24,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "pytest>=8.2.0",
+  "pytest-cov>=5.0.0",
   "ruff>=0.6.0",
 ]
 

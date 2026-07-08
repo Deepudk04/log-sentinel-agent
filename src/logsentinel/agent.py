@@ -150,9 +150,10 @@ def _snippet_node(state: ScanState) -> ScanState:
 
 def _semantic_node(state: ScanState) -> ScanState:
     request = state["request"]
+    settings = state["settings"]
     notes = [*state.get("notes", [])]
     findings = [*state.get("findings", [])]
-    if not request.use_semantic:
+    if not request.use_semantic or not settings.semantic_enabled:
         logger.info("Semantic analysis disabled for this scan")
         notes.append("Semantic analysis disabled for this scan.")
         return {"findings": findings, "notes": notes}
