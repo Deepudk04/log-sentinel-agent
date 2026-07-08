@@ -72,6 +72,20 @@ class Finding:
 
 
 @dataclass(frozen=True)
+class FindingCandidate:
+    rule_id: str
+    path: str
+    line: int
+    message: str
+    evidence: str
+    analyzer: Literal["deterministic", "semantic"]
+    confidence: float
+    language: str
+    symbol: str | None = None
+    deterministic_signals: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
 class Snippet:
     path: str
     language: str
@@ -79,6 +93,10 @@ class Snippet:
     end_line: int
     text: str
     reason: str
+    snippet_id: str | None = None
+    symbol: str | None = None
+    candidate_rule_ids: list[str] = field(default_factory=list)
+    deterministic_signals: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)

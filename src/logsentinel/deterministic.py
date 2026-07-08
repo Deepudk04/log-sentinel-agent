@@ -3,8 +3,9 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 
-from logsentinel.domain import CodeFile, Finding, Rule
+from logsentinel.domain import CodeFile, Finding, FindingCandidate, Rule
 from logsentinel.observability import get_logger
+from logsentinel.rules.registry import analyzers_for_language
 from logsentinel.treesitter import ParsedTree, TreeSitterService
 
 logger = get_logger("deterministic")
@@ -61,12 +62,13 @@ class DeterministicAnalyzer:
         self.tree_sitter = tree_sitter or TreeSitterService()
 
     def analyze(self, files: list[CodeFile]) -> tuple[list[Finding], list[str]]:
-        findings: list[Finding] = []
+        candidates: list[FindingCandidate] = []
         notes: list[str] = []
 
         for code_file in files:
             logger.debug("Analyzing file: %s", code_file.relative_path)
-            parsed = self.tree_sitter.parse(code_file)
+            context = self.tree_sitter.analyze_file(code_file)
+            parsed = context.parsed_tree
             if not parsed.parser_available and parsed.error:
                 logger.warning(
                     "Parser unavailable for %s; using regex fallback: %s",
@@ -74,23 +76,41 @@ class DeterministicAnalyzer:
                     parsed.error,
                 )
                 notes.append(f"{code_file.relative_path}: {parsed.error}; regex fallback used.")
-            before = len(findings)
-            findings.extend(self._scan_lines(code_file))
-            findings.extend(self._scan_exception_blocks(code_file, parsed))
+            before = len(candidates)
+            for analyzer in analyzers_for_language(code_file.language):
+                candidates.extend(analyzer.analyze(context))
             logger.debug(
-                "File analysis complete: %s findings_added=%s",
+                "File analysis complete: %s candidates_added=%s",
                 code_file.relative_path,
-                len(findings) - before,
+                len(candidates) - before,
             )
 
+        findings = [self._finding_from_candidate(candidate) for candidate in candidates]
         deduped = _dedupe(findings)
         logger.info(
-            "Deterministic analyzer finished: raw_findings=%s deduped_findings=%s notes=%s",
-            len(findings),
+            "Deterministic analyzer finished: raw_candidates=%s deduped_findings=%s notes=%s",
+            len(candidates),
             len(deduped),
             len(notes),
         )
         return deduped, notes
+
+    def _finding_from_candidate(self, candidate: FindingCandidate) -> Finding:
+        rule = self.rules[candidate.rule_id]
+        return Finding(
+            rule_id=rule.id,
+            rule_title=rule.title,
+            severity=rule.severity,
+            category=rule.category,
+            analyzer=candidate.analyzer,
+            path=candidate.path,
+            line=candidate.line,
+            message=candidate.message,
+            evidence=candidate.evidence,
+            recommendation=rule.recommendation,
+            confidence=candidate.confidence,
+            source_refs=rule.source_refs,
+        )
 
     def _scan_lines(self, code_file: CodeFile) -> list[Finding]:
         findings: list[Finding] = []

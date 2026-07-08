@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from logsentinel.domain import Finding, ScanResult, SourceRef
+from logsentinel.semantic.redactor import SecretRedactor
 
 SEVERITY_ORDER = {
     "critical": 0,
@@ -80,7 +81,7 @@ def write_report(markdown: str, output_dir: Path) -> Path:
 
 
 def _finding_markdown(finding: Finding) -> list[str]:
-    evidence = finding.evidence.replace("```", "'''")
+    evidence = SecretRedactor().redact(finding.evidence).replace("```", "'''")
     return [
         f"### {finding.severity.upper()} {finding.rule_id}: {finding.rule_title}",
         "",
