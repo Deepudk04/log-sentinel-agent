@@ -1,0 +1,27 @@
+{
+  "cases": [
+    {
+      "path": "evaluation/corpus/python/true_positive/app.py",
+      "expected": [
+        {"rule_id": "LOG-003", "line": 7},
+        {"rule_id": "ERR-003", "line": 13}
+      ]
+    },
+    {
+      "path": "evaluation/corpus/java/true_positive/AuthController.java",
+      "expected": [
+        {"rule_id": "LOG-005", "line": 5},
+        {"rule_id": "LOG-005", "line": 6},
+        {"rule_id": "LOG-005", "line": 7}
+      ]
+    },
+    {
+      "path": "evaluation/corpus/python/false_positive/clean_app.py",
+      "expected": []
+    },
+    {
+      "path": "evaluation/corpus/java/false_positive/CleanController.java",
+      "expected": []
+    }
+  ]
+}
