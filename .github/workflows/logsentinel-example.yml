@@ -1,0 +1,21 @@
+name: LogSentinel
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  logsentinel:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          path: "."
+          semantic_enabled: "false"
+          fail_on: "high"
+          output_format: "sarif"
+          upload_sarif: "true"
