@@ -4,6 +4,9 @@ from dataclasses import dataclass
 from typing import Any, Iterable
 
 from logsentinel.domain import CodeFile
+from logsentinel.observability import get_logger
+
+logger = get_logger("treesitter")
 
 
 @dataclass
@@ -55,6 +58,12 @@ class TreeSitterService:
         source_bytes = code_file.text.encode("utf-8")
         parser = self._get_parser(code_file.language)
         if parser is None:
+            logger.warning(
+                "No Tree-sitter parser available for %s file %s: %s",
+                code_file.language,
+                code_file.relative_path,
+                self._import_error or "unknown parser error",
+            )
             return ParsedTree(
                 code_file=code_file,
                 tree=None,
@@ -64,11 +73,14 @@ class TreeSitterService:
                 error=self._import_error or f"No parser available for {code_file.language}",
             )
         try:
+            logger.debug("Parsing %s with Tree-sitter as text", code_file.relative_path)
             tree = parser.parse(code_file.text)
         except TypeError:
+            logger.debug("Text parse failed for %s; retrying as bytes", code_file.relative_path)
             try:
                 tree = parser.parse(source_bytes)
             except Exception as exc:  # pragma: no cover - depends on parser runtime
+                logger.warning("Tree-sitter parse failed for %s: %s", code_file.relative_path, exc)
                 return ParsedTree(
                     code_file=code_file,
                     tree=None,
@@ -78,6 +90,7 @@ class TreeSitterService:
                     error=f"Tree-sitter parse failed: {exc}",
                 )
         except Exception as exc:  # pragma: no cover - depends on parser runtime
+            logger.warning("Tree-sitter parse failed for %s: %s", code_file.relative_path, exc)
             return ParsedTree(
                 code_file=code_file,
                 tree=None,
@@ -96,18 +109,23 @@ class TreeSitterService:
 
     def _get_parser(self, language: str) -> Any | None:
         if language in self._parsers:
+            logger.debug("Using cached Tree-sitter parser for %s", language)
             return self._parsers[language]
         try:
             from tree_sitter_language_pack import get_parser
         except Exception as exc:  # pragma: no cover - exercised when optional dep is absent
             self._import_error = f"tree-sitter-language-pack unavailable: {exc}"
+            logger.warning("%s", self._import_error)
             return None
         try:
+            logger.debug("Loading Tree-sitter parser for %s", language)
             parser = get_parser(language)
         except Exception as exc:  # pragma: no cover - depends on parser cache/download
             self._import_error = f"Unable to load {language} parser: {exc}"
+            logger.warning("%s", self._import_error)
             return None
         self._parsers[language] = parser
+        logger.info("Loaded Tree-sitter parser for %s", language)
         return parser
 
 

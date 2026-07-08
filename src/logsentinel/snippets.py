@@ -3,7 +3,10 @@ from __future__ import annotations
 import re
 
 from logsentinel.domain import CodeFile, Finding, Snippet
+from logsentinel.observability import get_logger
 from logsentinel.treesitter import TreeSitterService
+
+logger = get_logger("snippets")
 
 HOTWORD_RE = re.compile(
     r"(login|auth|authorize|permission|role|session|validate|validator|exception|error|"
@@ -31,6 +34,12 @@ class SnippetCollector:
         findings: list[Finding],
         max_snippets: int,
     ) -> list[Snippet]:
+        logger.info(
+            "Starting snippet collection: files=%s findings=%s limit=%s",
+            len(files),
+            len(findings),
+            max_snippets,
+        )
         snippets: list[Snippet] = []
         seen: set[tuple[str, int, int]] = set()
         by_path = {code_file.relative_path: code_file for code_file in files}
@@ -38,6 +47,7 @@ class SnippetCollector:
         for finding in findings:
             code_file = by_path.get(finding.path)
             if code_file is None:
+                logger.debug("Skipping finding without matching file: %s", finding.path)
                 continue
             self._add_line_window(
                 snippets,
@@ -47,9 +57,11 @@ class SnippetCollector:
                 f"deterministic finding {finding.rule_id}",
             )
             if len(snippets) >= max_snippets:
+                logger.info("Snippet limit reached from deterministic findings: %s", len(snippets))
                 return snippets
 
         for code_file in files:
+            logger.debug("Collecting semantic hotspots from %s", code_file.relative_path)
             parsed = self.tree_sitter.parse(code_file)
             if parsed.root_node is not None:
                 for node in parsed.find_nodes(SNIPPET_NODE_TYPES):
@@ -71,12 +83,16 @@ class SnippetCollector:
                         ),
                     )
                     if len(snippets) >= max_snippets:
+                        logger.info("Snippet limit reached from Tree-sitter hotspots: %s", len(snippets))
                         return snippets
             else:
+                logger.debug("Using regex hotspot fallback for %s", code_file.relative_path)
                 self._add_hotword_windows(snippets, seen, code_file, max_snippets)
                 if len(snippets) >= max_snippets:
+                    logger.info("Snippet limit reached from regex hotspots: %s", len(snippets))
                     return snippets
 
+        logger.info("Snippet collection finished: snippets=%s", len(snippets))
         return snippets
 
     def _add_hotword_windows(
@@ -127,9 +143,22 @@ class SnippetCollector:
     ) -> None:
         key = (snippet.path, snippet.start_line, snippet.end_line)
         if key in seen:
+            logger.debug(
+                "Skipping duplicate snippet: %s:%s-%s",
+                snippet.path,
+                snippet.start_line,
+                snippet.end_line,
+            )
             return
         seen.add(key)
         snippets.append(snippet)
+        logger.debug(
+            "Added snippet: %s:%s-%s reason=%s",
+            snippet.path,
+            snippet.start_line,
+            snippet.end_line,
+            snippet.reason,
+        )
 
 
 def _clip(text: str, max_chars: int = 5000) -> str:

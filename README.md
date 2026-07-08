@@ -46,6 +46,18 @@ $env:GEMINI_API_KEY = "your-key"
 $env:GEMINI_MODEL = "gemini-3.5-flash"
 ```
 
+To see detailed background progress, set the log level before starting the app:
+
+```powershell
+$env:LOGSENTINEL_LOG_LEVEL = "DEBUG"
+```
+
+Or add it to `.env`:
+
+```env
+LOGSENTINEL_LOG_LEVEL=DEBUG
+```
+
 `gemini-3.5-flash` is the default because Google currently lists it as the current stable Flash model in Gemini API docs. You can override it with `GEMINI_MODEL`.
 
 ## Run The Web UI

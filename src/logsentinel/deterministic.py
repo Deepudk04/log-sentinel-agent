@@ -4,7 +4,10 @@ import re
 from collections.abc import Iterable
 
 from logsentinel.domain import CodeFile, Finding, Rule
+from logsentinel.observability import get_logger
 from logsentinel.treesitter import ParsedTree, TreeSitterService
+
+logger = get_logger("deterministic")
 
 LOG_CALL_RE = re.compile(
     r"\b(?:logging|logger|log|auditLogger|audit_logger|audit|LOGGER|LOG)"
@@ -62,13 +65,32 @@ class DeterministicAnalyzer:
         notes: list[str] = []
 
         for code_file in files:
+            logger.debug("Analyzing file: %s", code_file.relative_path)
             parsed = self.tree_sitter.parse(code_file)
             if not parsed.parser_available and parsed.error:
+                logger.warning(
+                    "Parser unavailable for %s; using regex fallback: %s",
+                    code_file.relative_path,
+                    parsed.error,
+                )
                 notes.append(f"{code_file.relative_path}: {parsed.error}; regex fallback used.")
+            before = len(findings)
             findings.extend(self._scan_lines(code_file))
             findings.extend(self._scan_exception_blocks(code_file, parsed))
+            logger.debug(
+                "File analysis complete: %s findings_added=%s",
+                code_file.relative_path,
+                len(findings) - before,
+            )
 
-        return _dedupe(findings), notes
+        deduped = _dedupe(findings)
+        logger.info(
+            "Deterministic analyzer finished: raw_findings=%s deduped_findings=%s notes=%s",
+            len(findings),
+            len(deduped),
+            len(notes),
+        )
+        return deduped, notes
 
     def _scan_lines(self, code_file: CodeFile) -> list[Finding]:
         findings: list[Finding] = []
@@ -88,6 +110,7 @@ class DeterministicAnalyzer:
                         0.82,
                     )
                 )
+                logger.debug("Detected LOG-003 in %s:%s", code_file.relative_path, line_no)
 
             if (
                 LOG_CALL_RE.search(line)
@@ -104,6 +127,7 @@ class DeterministicAnalyzer:
                         0.66,
                     )
                 )
+                logger.debug("Detected LOG-004 in %s:%s", code_file.relative_path, line_no)
 
             if DISABLE_LOGGING_RE.search(line):
                 findings.append(
@@ -116,6 +140,7 @@ class DeterministicAnalyzer:
                         0.86,
                     )
                 )
+                logger.debug("Detected LOG-007 in %s:%s", code_file.relative_path, line_no)
 
             if TECHNICAL_RESPONSE_RE.search(line):
                 findings.append(
@@ -128,6 +153,7 @@ class DeterministicAnalyzer:
                         0.78,
                     )
                 )
+                logger.debug("Detected ERR-002 in %s:%s", code_file.relative_path, line_no)
 
         return findings
 

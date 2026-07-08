@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from logsentinel.observability import get_logger
+from logsentinel.observability import configure_logging, get_logger
 
 PACKAGE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = PACKAGE_DIR.parents[1]
@@ -31,6 +31,7 @@ def _load_dotenv() -> None:
             if name and name not in os.environ:
                 os.environ[name] = value
                 loaded += 1
+        configure_logging()
         logger.info("Loaded %s settings from %s", loaded, env_path)
 
 

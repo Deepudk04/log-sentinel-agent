@@ -10,8 +10,10 @@ from fastapi.templating import Jinja2Templates
 from logsentinel.agent import run_scan
 from logsentinel.config import load_settings
 from logsentinel.domain import ScanRequest
+from logsentinel.observability import configure_logging, get_logger
 
 PACKAGE_DIR = Path(__file__).resolve().parent
+logger = get_logger("web")
 
 app = FastAPI(title="LogSentinel", version="0.1.0")
 app.mount("/static", StaticFiles(directory=PACKAGE_DIR / "static"), name="static")
@@ -20,6 +22,7 @@ templates = Jinja2Templates(directory=PACKAGE_DIR / "templates")
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
+    logger.info("Rendering index page for %s", request.client.host if request.client else "unknown")
     settings = load_settings()
     return templates.TemplateResponse(
         request,
@@ -46,6 +49,13 @@ async def scan(
     max_files: int = Form(500),
     max_snippets: int = Form(40),
 ):
+    logger.info(
+        "Web scan requested: repo_path=%s use_semantic=%s max_files=%s max_snippets=%s",
+        repo_path,
+        use_semantic,
+        max_files,
+        max_snippets,
+    )
     try:
         result = run_scan(
             ScanRequest(
@@ -57,6 +67,11 @@ async def scan(
             )
         )
         report_filename = Path(result.report_path).name if result.report_path else None
+        logger.info(
+            "Web scan succeeded: findings=%s report=%s",
+            len(result.findings),
+            report_filename or "not written",
+        )
         return templates.TemplateResponse(
             request,
             "index.html",
@@ -73,6 +88,7 @@ async def scan(
             },
         )
     except Exception as exc:
+        logger.exception("Web scan failed")
         return templates.TemplateResponse(
             request,
             "index.html",
@@ -93,16 +109,22 @@ async def scan(
 
 @app.get("/reports/{filename}")
 async def download_report(filename: str):
+    logger.info("Report download requested: %s", filename)
     if Path(filename).name != filename or not filename.endswith(".md"):
+        logger.warning("Invalid report download path: %s", filename)
         return PlainTextResponse("Invalid report path.", status_code=400)
     settings = load_settings()
     path = (settings.output_dir / filename).resolve()
     if not path.exists():
+        logger.warning("Report not found: %s", path)
         return PlainTextResponse("Report not found.", status_code=404)
+    logger.info("Serving report: %s", path)
     return FileResponse(path, media_type="text/markdown", filename=filename)
 
 
 def main() -> None:
     import uvicorn
 
+    configure_logging()
+    logger.info("Starting LogSentinel web server at http://127.0.0.1:8000")
     uvicorn.run("logsentinel.web:app", host="127.0.0.1", port=8000, reload=True)

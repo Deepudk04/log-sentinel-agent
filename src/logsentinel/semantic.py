@@ -6,6 +6,9 @@ from dataclasses import dataclass
 
 from logsentinel.config import Settings
 from logsentinel.domain import Finding, Rule, Snippet
+from logsentinel.observability import get_logger
+
+logger = get_logger("semantic")
 
 
 @dataclass(frozen=True)
@@ -21,17 +24,26 @@ class GeminiSemanticAnalyzer:
 
     def analyze(self, snippets: list[Snippet]) -> SemanticResult:
         if not snippets:
+            logger.info("Semantic analysis skipped: no snippets collected")
             return SemanticResult(findings=[], notes=["Semantic analysis skipped: no snippets collected."])
         if not self.settings.gemini_api_key:
+            logger.warning("Semantic analysis skipped: Gemini API key is not set")
             return SemanticResult(
                 findings=[],
                 notes=["Semantic analysis skipped: GEMINI_API_KEY or GOOGLE_API_KEY is not set."],
             )
 
         prompt = self._build_prompt(snippets)
+        logger.info(
+            "Calling Gemini semantic analyzer: model=%s snippets=%s prompt_chars=%s",
+            self.settings.gemini_model,
+            len(snippets),
+            len(prompt),
+        )
         try:
             from google import genai
         except Exception as exc:  # pragma: no cover - optional dependency guard
+            logger.error("Semantic analysis skipped: google-genai unavailable: %s", exc)
             return SemanticResult(
                 findings=[],
                 notes=[f"Semantic analysis skipped: google-genai unavailable ({exc})."],
@@ -45,12 +57,15 @@ class GeminiSemanticAnalyzer:
                 config={"temperature": 0, "response_mime_type": "application/json"},
             )
             text = getattr(response, "text", "") or ""
+            logger.info("Gemini response received: response_chars=%s", len(text))
         except Exception as exc:  # pragma: no cover - network/API dependent
+            logger.error("Semantic analysis failed: %s", exc)
             return SemanticResult(findings=[], notes=[f"Semantic analysis failed: {exc}"])
         finally:
             close = getattr(client, "close", None)
             if callable(close):
                 close()
+                logger.debug("Gemini client closed")
 
         return self._parse_response(text, snippets)
 
@@ -97,6 +112,7 @@ class GeminiSemanticAnalyzer:
         try:
             payload = json.loads(_extract_json(text))
         except json.JSONDecodeError as exc:
+            logger.warning("Semantic response was not valid JSON: %s", exc)
             return SemanticResult(
                 findings=[],
                 notes=[f"Semantic analysis response was not valid JSON: {exc}"],
@@ -109,17 +125,32 @@ class GeminiSemanticAnalyzer:
         for raw in payload.get("findings", []):
             rule_id = str(raw.get("rule_id", "")).strip()
             if rule_id not in self.rules:
+                logger.warning("Skipping semantic finding with unknown rule_id: %s", rule_id)
                 notes.append(f"Semantic finding skipped because rule_id is not in catalog: {rule_id}")
                 continue
             path = str(raw.get("path", "")).strip()
             if path not in valid_paths:
+                logger.warning("Skipping semantic finding with path outside snippets: %s", path)
                 notes.append(f"Semantic finding skipped because path was not in snippets: {path}")
                 continue
             rule = self.rules[rule_id]
             line = _safe_int(raw.get("line")) or snippet_by_path[path].start_line
             confidence = min(max(float(raw.get("confidence", 0.55)), 0.0), 1.0)
             if confidence < 0.55:
+                logger.debug(
+                    "Skipping low-confidence semantic finding: rule=%s path=%s confidence=%s",
+                    rule_id,
+                    path,
+                    confidence,
+                )
                 continue
+            logger.debug(
+                "Accepted semantic finding: rule=%s path=%s line=%s confidence=%s",
+                rule_id,
+                path,
+                line,
+                confidence,
+            )
             findings.append(
                 Finding(
                     rule_id=rule.id,
@@ -137,6 +168,7 @@ class GeminiSemanticAnalyzer:
                 )
             )
 
+        logger.info("Semantic response parsed: findings=%s notes=%s", len(findings), len(notes))
         return SemanticResult(findings=findings, notes=notes)
 
 
