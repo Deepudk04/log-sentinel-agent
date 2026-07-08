@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from logsentinel.deterministic import DeterministicAnalyzer
-from logsentinel.domain import CodeFile
-from logsentinel.rule_catalog import load_rules
+from deterministic import DeterministicAnalyzer
+from domain import CodeFile
+from rule_catalog import load_rules
 
 
 def test_detects_sensitive_logging_in_python():

@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from logsentinel.domain import CodeFile, FindingCandidate
-from logsentinel.parsing.treesitter_service import TreeSitterService
-from logsentinel.rules.registry import analyzers_for_language
+from domain import CodeFile, FindingCandidate
+from parsing.treesitter_service import TreeSitterService
+from rules.registry import analyzers_for_language
 
 
 class _NoParserService(TreeSitterService):

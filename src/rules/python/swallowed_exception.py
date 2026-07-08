@@ -1,0 +1,17 @@
+from __future__ import annotations
+
+from domain import FindingCandidate
+from parsing import FileAnalysisContext
+from rules.common import exception_block_candidates
+
+
+class PythonSwallowedExceptionRule:
+    rule_id = "ERR-003"
+    languages = {"python"}
+
+    def analyze(self, context: FileAnalysisContext) -> list[FindingCandidate]:
+        return [
+            candidate
+            for candidate in exception_block_candidates(context)
+            if candidate.rule_id in {"ERR-001", "ERR-003", "LOG-005"}
+        ]

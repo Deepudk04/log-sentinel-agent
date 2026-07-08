@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from logsentinel.config import Settings
-from logsentinel.preprocessor import RepoPreprocessor
+from config import Settings
+from preprocessor import RepoPreprocessor
 
 
 def _settings() -> Settings:
