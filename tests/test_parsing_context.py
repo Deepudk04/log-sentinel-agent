@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from logsentinel.domain import CodeFile
-from logsentinel.parsing.treesitter_service import TreeSitterService
+from domain import CodeFile
+from parsing.treesitter_service import TreeSitterService
 
 
 class _NoParserService(TreeSitterService):

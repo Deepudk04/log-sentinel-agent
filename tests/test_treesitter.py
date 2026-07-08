@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from logsentinel.domain import CodeFile
-from logsentinel.treesitter import TreeSitterService
+from domain import CodeFile
+from treesitter import TreeSitterService
 
 
 class _Tree:

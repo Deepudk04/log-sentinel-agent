@@ -1,12 +1,12 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
-from logsentinel.domain import CodeFile, Finding, FindingCandidate, ScanResult
-from logsentinel.parsing.treesitter_service import TreeSitterService
-from logsentinel.reporting import render_markdown
-from logsentinel.rule_catalog import load_rules
-from logsentinel.semantic.redactor import SecretRedactor
-from logsentinel.semantic.snippet_builder import SnippetBuilder
+from domain import CodeFile, Finding, FindingCandidate, ScanResult
+from parsing.treesitter_service import TreeSitterService
+from reporting import render_markdown
+from rule_catalog import load_rules
+from semantic.redactor import SecretRedactor
+from semantic.snippet_builder import SnippetBuilder
 
 
 class _NoParserService(TreeSitterService):

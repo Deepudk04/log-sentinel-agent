@@ -1,4 +1,4 @@
-from logsentinel import config
+import config
 
 
 def test_load_settings_reads_dotenv(monkeypatch, tmp_path):

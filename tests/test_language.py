@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from logsentinel.language import LanguageDetector
+from language import LanguageDetector
 
 
 def test_language_detector_detects_supported_languages():
