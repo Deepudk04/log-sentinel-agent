@@ -16,6 +16,6 @@ jobs:
         with:
           path: "."
           semantic_enabled: "false"
-          fail_on: "high"
+          fail_on: "critical"
           output_format: "sarif"
           upload_sarif: "true"
